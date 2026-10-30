@@ -4,6 +4,7 @@ import { VoiceReader } from '../components/common/VoiceReader.jsx';
 
 export const WaterManagementPage = () => {
   const [selectedCrop, setSelectedCrop] = useState('');
+  const [customCropName, setCustomCropName] = useState('');
   const [landArea, setLandArea] = useState('');
   const [irrigationMethod, setIrrigationMethod] = useState('');
   const [soilCondition, setSoilCondition] = useState('');
@@ -19,9 +20,12 @@ export const WaterManagementPage = () => {
     Maize: { mm: 600, floodReqLakhLitres: 48, dripSavings: 40 }
   };
 
-  const cropData = CROP_WATER_DATA[selectedCrop];
+  const customCropData = { mm: 650, floodReqLakhLitres: 52, dripSavings: 45 };
+  const cropData = selectedCrop === '__custom__' ? customCropData : CROP_WATER_DATA[selectedCrop];
   const area = Number(landArea) || 0;
-  const hasInputs = Boolean(cropData && area > 0 && irrigationMethod && soilCondition && weatherCondition);
+  const hasCustomCropName = selectedCrop !== '__custom__' || Boolean(customCropName.trim());
+  const hasInputs = Boolean(cropData && hasCustomCropName && area > 0 && irrigationMethod && soilCondition && weatherCondition);
+  const effectiveCropName = selectedCrop === '__custom__' ? customCropName.trim() : selectedCrop;
   const totalWaterRequirement = cropData ? cropData.floodReqLakhLitres * area : 0;
   const waterSavedDrip = cropData ? Math.round((totalWaterRequirement * cropData.dripSavings) / 100) : 0;
   const irrigationInterval = soilCondition === 'Sandy' ? 'every 2–3 days' : soilCondition === 'Clay' ? 'every 5–7 days' : 'every 3–5 days';
@@ -58,7 +62,18 @@ export const WaterManagementPage = () => {
               {Object.keys(CROP_WATER_DATA).map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
+              <option value="__custom__">Other / Enter custom crop</option>
             </select>
+            {selectedCrop === '__custom__' && (
+              <input
+                type="text"
+                required
+                value={customCropName}
+                onChange={(e) => setCustomCropName(e.target.value)}
+                placeholder="Enter crop name, e.g. Onion"
+                className="mt-2 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm"
+              />
+            )}
           </div>
 
           <div>
@@ -113,6 +128,11 @@ export const WaterManagementPage = () => {
         {/* Output Metrics */}
         {hasInputs && <div className="space-y-4 pt-4 border-t border-slate-100">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {selectedCrop === '__custom__' && (
+            <div className="sm:col-span-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              Custom crop estimate for <strong>{effectiveCropName}</strong>: uses an approximate 650 mm seasonal requirement until crop-specific data is available.
+            </div>
+          )}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Seasonal Water Requirement</span>
             <span className="text-2xl font-black text-slate-900 block mt-1">{totalWaterRequirement} Lakh Litres</span>

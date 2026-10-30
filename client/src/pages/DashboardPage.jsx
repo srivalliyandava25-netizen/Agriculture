@@ -34,7 +34,11 @@ export const DashboardPage = () => {
   const [weatherData, setWeatherData] = useState(null);
   const [activities, setActivities] = useState([]);
   const [expenses, setExpenses] = useState([]);
-  const [mandiPrices, setMandiPrices] = useState([]);
+  const [referralCopied, setReferralCopied] = useState(false);
+  const referralCode = user?.referralCode || user?._id?.slice(-8)?.toUpperCase() || '';
+  const referralLink = typeof window !== 'undefined' && referralCode
+    ? `${window.location.origin}/register?ref=${encodeURIComponent(referralCode)}`
+    : '';
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -75,10 +79,6 @@ export const DashboardPage = () => {
       // 5. Fetch farming expenses
       const expRes = await api.get('/expenses/my-records').catch(() => ({ records: [] }));
       setExpenses(expRes.records || []);
-
-      // 6. Fetch Mandi prices
-      const mandiRes = await api.get(`/market/prices?state=${encodeURIComponent(state)}&limit=4`).catch(() => ({ prices: [] }));
-      setMandiPrices(mandiRes.prices || []);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {
@@ -89,6 +89,17 @@ export const DashboardPage = () => {
   useEffect(() => {
     loadDashboardData();
   }, [user]);
+
+  const handleCopyReferral = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setReferralCopied(true);
+      window.setTimeout(() => setReferralCopied(false), 1800);
+    } catch {
+      setReferralCopied(false);
+    }
+  };
 
   const handleToggleActivity = async (id, currentStatus) => {
     try {
@@ -521,38 +532,27 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Local Mandi Prices Benchmark */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-teal-700" />
-              <span>{t('dashboard.marketTrends')}</span>
-            </h2>
-            <p className="text-xs text-slate-500">Latest modal wholesale auction prices per quintal</p>
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="flex-1">
+            <label className="block text-sm font-bold text-slate-900">Referral link</label>
+            <p className="text-xs text-slate-500 mt-0.5">Invite farmers to join Mitti Mitra</p>
+            <input
+              value={referralLink || 'Your referral link will appear here'}
+              readOnly
+              placeholder="Referral link"
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600"
+              aria-label="Referral link"
+            />
           </div>
-          <Link to="/market-prices" className="text-xs font-bold text-primary-700 hover:text-primary-800">
-            Compare Markets &rarr;
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mandiPrices.map((m) => (
-            <div key={m._id} className="p-4 rounded-xl border border-slate-100 bg-sand-50/60">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{m.marketName}</span>
-              <h3 className="font-extrabold text-sm text-slate-900 mt-0.5">{m.commodity}</h3>
-              <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-xl font-black text-slate-900">₹{m.modalPrice.toLocaleString('en-IN')}</span>
-                <span className="text-[10px] text-slate-500">/ qtl</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-                <span>Range: ₹{m.minPrice} - ₹{m.maxPrice}</span>
-                <span className={`font-bold capitalize ${m.trend === 'rising' ? 'text-emerald-700' : 'text-slate-600'}`}>
-                  {m.trend}
-                </span>
-              </div>
-            </div>
-          ))}
+          <button
+            type="button"
+            onClick={handleCopyReferral}
+            disabled={!referralLink}
+            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {referralCopied ? 'Copied' : 'Copy link'}
+          </button>
         </div>
       </div>
     </div>

@@ -87,7 +87,10 @@ export const createPost = async (req, res, next) => {
 
 export const getPostById = async (req, res, next) => {
   try {
-    const post = await CommunityPost.findById(req.params.id);
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Post not found.' });
+    }
+    const post = await CommunityPost.findOne({ _id: req.params.id, flagged: false });
     if (!post) {
       return res.status(404).json({ success: false, message: 'Post not found.' });
     }
@@ -150,6 +153,7 @@ export const toggleLike = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
+      post,
       likesCount: post.likes.length,
       isLiked: existingIndex === -1
     });

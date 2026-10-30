@@ -15,6 +15,7 @@ import { VoiceReader } from '../components/common/VoiceReader.jsx';
 
 export const FertilizerAdvisoryPage = () => {
   const [cropName, setCropName] = useState('');
+  const [customCropName, setCustomCropName] = useState('');
   const [landArea, setLandArea] = useState('');
   const [landUnit, setLandUnit] = useState('acres');
   const [soilReports, setSoilReports] = useState([]);
@@ -44,9 +45,16 @@ export const FertilizerAdvisoryPage = () => {
     setError('');
     setLoading(true);
 
+    const selectedCropName = cropName === '__custom__' ? customCropName.trim() : cropName.trim();
+    if (!selectedCropName) {
+      setError('Please select a crop or enter a custom crop name.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await api.post('/fertilizers/advisory', {
-        cropName,
+        cropName: selectedCropName,
         landArea: Number(landArea) || 1,
         landUnit,
         soilReportId: selectedSoilReportId || null
@@ -124,7 +132,18 @@ export const FertilizerAdvisoryPage = () => {
                 <option value="Groundnut">Groundnut (मूंगफली)</option>
                 <option value="Sugarcane">Sugarcane (गन्ना)</option>
                 <option value="Tomato">Tomato (टमाटर)</option>
+                <option value="__custom__">Other / Enter custom crop</option>
               </select>
+              {cropName === '__custom__' && (
+                <input
+                  type="text"
+                  required
+                  value={customCropName}
+                  onChange={(e) => setCustomCropName(e.target.value)}
+                  placeholder="Enter crop name, e.g. Onion"
+                  className="mt-2 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              )}
             </div>
 
             <div>

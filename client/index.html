@@ -12,6 +12,39 @@
   </head>
   <body class="bg-[#fbfaf6] text-slate-800 antialiased selection:bg-primary-100 selection:text-primary-900 font-sans min-h-screen">
     <div id="root"></div>
+    <script>
+      (function initializeSavedLanguage() {
+        var supported = ['en','hi','bn','te','ta','mr','gu','kn','ml','pa','or','ur','as','ks','kok','mai','mni','ne','sd','sa','sat','brx','doi','lus','kha','trp'];
+        var saved = localStorage.getItem('mittimitra_lang');
+        var language = supported.indexOf(saved) !== -1 ? saved : 'en';
+
+        document.documentElement.lang = language;
+        if (saved !== language) localStorage.setItem('mittimitra_lang', language);
+
+        var hostname = window.location.hostname;
+        var domains = [''];
+        if (hostname && hostname !== 'localhost' && !/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
+          var cleanHostname = hostname.replace(/^www\./, '');
+          domains.push(cleanHostname);
+          domains.push('.' + cleanHostname);
+          var parts = cleanHostname.split('.');
+          for (var index = 1; index < parts.length - 1; index += 1) {
+            var parent = parts.slice(index).join('.');
+            domains.push(parent);
+            domains.push('.' + parent);
+          }
+        }
+        for (var domainIndex = 0; domainIndex < domains.length; domainIndex += 1) {
+          var domain = domains[domainIndex];
+          document.cookie = 'googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT' + (domain ? '; domain=' + domain : '');
+        }
+        var googleCookie = 'googtrans=/en/' + language + '; path=/';
+        document.cookie = googleCookie;
+        for (var cookieIndex = 1; cookieIndex < domains.length; cookieIndex += 1) {
+          document.cookie = googleCookie + '; domain=' + domains[cookieIndex];
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

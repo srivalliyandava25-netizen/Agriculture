@@ -17,6 +17,7 @@ import { VoiceReader } from '../components/common/VoiceReader.jsx';
 
 export const DiseaseDetectionPage = () => {
   const [cropName, setCropName] = useState('');
+  const [customCropName, setCustomCropName] = useState('');
   const [symptomsDescription, setSymptomsDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -60,8 +61,9 @@ export const DiseaseDetectionPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!cropName) {
-      setError('Please select the affected crop.');
+    const selectedCropName = cropName === '__custom__' ? customCropName.trim() : cropName.trim();
+    if (!selectedCropName) {
+      setError('Please select a crop or enter a custom crop name.');
       return;
     }
     if (!selectedFile) {
@@ -75,7 +77,7 @@ export const DiseaseDetectionPage = () => {
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
-      formData.append('cropName', cropName);
+      formData.append('cropName', selectedCropName);
       if (symptomsDescription) {
         formData.append('symptomsDescription', symptomsDescription);
       }
@@ -146,7 +148,18 @@ export const DiseaseDetectionPage = () => {
                 <option value="Cotton">Cotton (कपास)</option>
                 <option value="Maize">Maize (मक्का)</option>
                 <option value="Chili">Chili (मिर्च)</option>
+                <option value="__custom__">Other / Enter custom crop</option>
               </select>
+              {cropName === '__custom__' && (
+                <input
+                  type="text"
+                  required
+                  value={customCropName}
+                  onChange={(e) => setCustomCropName(e.target.value)}
+                  placeholder="Enter crop name, e.g. Onion"
+                  className="mt-2 w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              )}
             </div>
 
             <div>

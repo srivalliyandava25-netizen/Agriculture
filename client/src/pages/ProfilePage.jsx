@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Sprout, Save, Trash2, Shield, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { LANGUAGE_OPTIONS, useLanguage } from '../context/LanguageContext.jsx';
 import { Alert } from '../components/common/Alert.jsx';
 import { api } from '../services/api.js';
 
@@ -12,7 +12,7 @@ export const ProfilePage = () => {
   const navigate = useNavigate();
 
   const [name, setName] = useState(user?.name || '');
-  const [preferredLanguage, setPreferredLanguage] = useState(user?.preferredLanguage || 'en');
+  const [preferredLanguage, setPreferredLanguage] = useState(lang || 'en');
   const [state, setState] = useState(user?.state || '');
   const [district, setDistrict] = useState(user?.district || '');
   const [village, setVillage] = useState(user?.village || '');
@@ -111,8 +111,9 @@ export const ProfilePage = () => {
                 onChange={(e) => setPreferredLanguage(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
               >
-                <option value="en">English</option>
-                <option value="hi">हिन्दी (Hindi)</option>
+                {LANGUAGE_OPTIONS.map((language) => (
+                  <option key={language.code} value={language.code}>{language.native}</option>
+                ))}
               </select>
             </div>
           </div>

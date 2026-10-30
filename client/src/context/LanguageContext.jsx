@@ -40,15 +40,44 @@ export const LANGUAGE_OPTIONS = [
 export const SPEECH_LANGUAGE_CODES = {
   en: 'en-IN', hi: 'hi-IN', bn: 'bn-IN', te: 'te-IN', ta: 'ta-IN', mr: 'mr-IN',
   gu: 'gu-IN', kn: 'kn-IN', ml: 'ml-IN', pa: 'pa-IN', or: 'or-IN', ur: 'ur-IN',
-  as: 'as-IN', ne: 'ne-NP'
+  as: 'as-IN', ks: 'ks-IN', kok: 'kok-IN', mai: 'mai-IN', mni: 'mni-IN', ne: 'ne-NP',
+  sd: 'sd-IN', sa: 'sa-IN', sat: 'sat-IN', brx: 'brx-IN', doi: 'doi-IN',
+  lus: 'lus-IN', kha: 'kha-IN', trp: 'trp-IN'
 };
 
 const translations = { en, hi, mr, pa, bn, ta };
 
 const setGoogleTranslationCookie = (language) => {
-  const value = language === 'en' ? '/en/en' : `/en/${language}`;
+  const hostname = window.location.hostname;
+  const cookieHosts = new Set(['']);
+
+  if (hostname && hostname !== 'localhost' && !/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
+    const cleanHostname = hostname.replace(/^www\./, '');
+    cookieHosts.add(`domain=${cleanHostname}`);
+    cookieHosts.add(`domain=.${cleanHostname}`);
+
+    const parts = cleanHostname.split('.');
+    for (let index = 1; index < parts.length - 1; index += 1) {
+      const parent = parts.slice(index).join('.');
+      cookieHosts.add(`domain=${parent}`);
+      cookieHosts.add(`domain=.${parent}`);
+    }
+  }
+
+  // Always remove every possible stale Google Translate cookie first.
+  // This is especially important when switching to English: setting a new
+  // language cookie can leave an old /en/ta or /en/te cookie behind.
+  for (const cookieHost of cookieHosts) {
+    document.cookie = `googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT${cookieHost ? `; ${cookieHost}` : ''}`;
+  }
+
+  // Set English explicitly as /en/en. Merely deleting the cookie may make
+  // Google Translate fall back to browser/page heuristics and switch pages.
+  const value = `/en/${language}`;
   document.cookie = `googtrans=${value}; path=/`;
-  document.cookie = `googtrans=${value}; path=/; domain=${window.location.hostname}`;
+  for (const cookieHost of cookieHosts) {
+    if (cookieHost) document.cookie = `googtrans=${value}; path=/; ${cookieHost}`;
+  }
 };
 
 const applyWebsiteTranslation = (language) => {
@@ -62,6 +91,10 @@ const applyWebsiteTranslation = (language) => {
   if (select.value !== language) {
     select.value = language;
     select.dispatchEvent(new Event('change', { bubbles: true }));
+  } else if (language === 'en') {
+    // An explicit English state is required; dispatch even when the widget
+    // already reads "en" so stale translated DOM can be restored.
+    select.dispatchEvent(new Event('change', { bubbles: true }));
   }
   return true;
 };
@@ -69,18 +102,20 @@ const applyWebsiteTranslation = (language) => {
 const LanguageContext = createContext(null);
 
 export const LanguageProvider = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [lang, setLangState] = useState(() => {
-    return localStorage.getItem('mittimitra_lang') || 'en';
+    const savedLanguage = localStorage.getItem('mittimitra_lang');
+    return LANGUAGE_OPTIONS.some((language) => language.code === savedLanguage) ? savedLanguage : 'en';
   });
-
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   const setLang = (newLang) => {
     const normalizedLanguage = LANGUAGE_OPTIONS.some((language) => language.code === newLang) ? newLang : 'en';
     setLangState(normalizedLanguage);
     localStorage.setItem('mittimitra_lang', normalizedLanguage);
+    document.documentElement.lang = normalizedLanguage;
     setGoogleTranslationCookie(normalizedLanguage);
+    applyWebsiteTranslation(normalizedLanguage);
 
     if (isAuthenticated) {
       api.put('/auth/profile', { preferredLanguage: normalizedLanguage }).catch((error) => {
@@ -89,13 +124,21 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
+  // Restore the same persisted choice on every reload and browser back-cache restore.
   useEffect(() => {
-    if (!isAuthenticated || !user?.preferredLanguage || localStorage.getItem('mittimitra_lang')) return;
-    const savedLanguage = user.preferredLanguage;
-    if (LANGUAGE_OPTIONS.some((language) => language.code === savedLanguage)) {
-      setLang(savedLanguage);
-    }
-  }, [isAuthenticated, user?.preferredLanguage]);
+    const restorePersistedLanguage = () => {
+      const savedLanguage = localStorage.getItem('mittimitra_lang');
+      if (LANGUAGE_OPTIONS.some((language) => language.code === savedLanguage)) {
+        setLang(savedLanguage);
+      } else {
+        setLang('en');
+      }
+    };
+
+    restorePersistedLanguage();
+    window.addEventListener('pageshow', restorePersistedLanguage);
+    return () => window.removeEventListener('pageshow', restorePersistedLanguage);
+  }, []);
 
   const t = (path) => {
     const keys = path.split('.');
@@ -126,9 +169,27 @@ export const LanguageProvider = ({ children }) => {
     if (!text) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = SPEECH_LANGUAGE_CODES[lang] || 'en-IN';
-    utterance.rate = 0.9; // clear, comfortable speed for farmers
+    const requestedLocale = SPEECH_LANGUAGE_CODES[lang] || 'en-IN';
+    utterance.lang = requestedLocale;
+    utterance.rate = 0.9;
 
+    const selectMatchingVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const normalizedLocale = requestedLocale.toLowerCase().replace('_', '-');
+      const languageBase = normalizedLocale.split('-')[0];
+      const matchingVoice = voices.find((voice) => voice.lang?.toLowerCase().replace('_', '-') === normalizedLocale)
+        || voices.find((voice) => voice.lang?.toLowerCase().replace('_', '-').startsWith(languageBase));
+      if (matchingVoice) utterance.voice = matchingVoice;
+      return Boolean(matchingVoice);
+    };
+
+    if (!selectMatchingVoice() && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.addEventListener?.('voiceschanged', selectMatchingVoice, { once: true });
+      window.setTimeout(selectMatchingVoice, 300);
+    }
+
+    utterance.pitch = 1;
+    utterance.volume = 1;
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
@@ -144,6 +205,10 @@ export const LanguageProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Do not initialize Google Translate while English is selected. This prevents
+    // Google Translate from resurrecting a translated state after a reload.
+    if (lang === 'en') return;
+
     const supportedLanguages = LANGUAGE_OPTIONS.map((language) => language.code).join(',');
     window.googleTranslateElementInit = () => {
       if (!window.google?.translate?.TranslateElement) return;
@@ -166,7 +231,7 @@ export const LanguageProvider = ({ children }) => {
     } else if (window.google?.translate) {
       window.googleTranslateElementInit();
     }
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     let attempts = 0;

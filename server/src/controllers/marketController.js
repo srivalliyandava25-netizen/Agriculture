@@ -2,13 +2,17 @@ import { getMarketPrices, calculateTransportEconomics } from '../services/market
 
 export const getPrices = async (req, res, next) => {
   try {
-    const { state, district, commodity, page, limit } = req.query;
+    const { state, district, commodity, marketName, dateFrom, dateTo, page, limit, verifiedOnly } = req.query;
     const result = await getMarketPrices({
       state,
       district,
       commodity,
+      marketName,
+      dateFrom,
+      dateTo,
       page,
-      limit
+      limit,
+      verifiedOnly
     });
 
     res.status(200).json({

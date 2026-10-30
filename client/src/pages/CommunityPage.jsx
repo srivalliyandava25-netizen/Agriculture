@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Users,
   MessageSquare,
@@ -18,6 +19,9 @@ import { VoiceReader } from '../components/common/VoiceReader.jsx';
 
 export const CommunityPage = () => {
   const { user } = useAuth();
+  const { postId: routePostId } = useParams();
+  const hashPostId = window.location.hash.match(/^#post-([a-f0-9]{24})$/i)?.[1] || '';
+  const sharedPostId = routePostId || hashPostId;
 
   const [posts, setPosts] = useState([]);
   const [category, setCategory] = useState('all');
@@ -39,8 +43,13 @@ export const CommunityPage = () => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const data = await api.get(`/community?category=${category}&search=${encodeURIComponent(search)}`);
-      setPosts(data.posts || []);
+      if (sharedPostId) {
+        const shared = await api.get(`/community/${sharedPostId}`);
+        setPosts(shared.post ? [shared.post] : []);
+      } else {
+        const data = await api.get(`/community?category=${category}&search=${encodeURIComponent(search)}&limit=50`);
+        setPosts(data.posts || []);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,7 +59,12 @@ export const CommunityPage = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, [category]);
+    if (sharedPostId) {
+      window.setTimeout(() => {
+        document.getElementById(`post-${sharedPostId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [category, sharedPostId]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -85,20 +99,7 @@ export const CommunityPage = () => {
     }
     try {
       const data = await api.post(`/community/${postId}/like`);
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p._id === postId) {
-            const userId = user?.id;
-            const likes = p.likes || [];
-            const hasLiked = likes.some((id) => (typeof id === 'object' ? id._id === userId : id === userId));
-            const newLikes = hasLiked
-              ? likes.filter((id) => (typeof id === 'object' ? id._id !== userId : id !== userId))
-              : [...likes, userId];
-            return { ...p, likes: newLikes };
-          }
-          return p;
-        })
-      );
+      setPosts((prev) => prev.map((p) => (p._id === postId ? data.post : p)));
     } catch (err) {
       alert(err.message);
     }
@@ -132,7 +133,7 @@ export const CommunityPage = () => {
   };
 
   const handleSharePost = async (post) => {
-    const url = `${window.location.origin}/community#post-${post._id}`;
+    const url = `${window.location.origin}/community/${post._id}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: post.title, text: post.content?.slice(0, 160), url });

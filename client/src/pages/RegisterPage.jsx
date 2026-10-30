@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Sprout, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Alert } from '../components/common/Alert.jsx';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { LANGUAGE_OPTIONS, useLanguage } from '../context/LanguageContext.jsx';
 
 const INDIAN_STATES = [
   'Andhra Pradesh',
@@ -25,7 +25,7 @@ const INDIAN_STATES = [
 
 export const RegisterPage = () => {
   const { register } = useAuth();
-  const { lang } = useLanguage();
+  const { lang, setLang } = useLanguage();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -73,6 +73,7 @@ export const RegisterPage = () => {
       };
 
       await register(payload);
+      setLang(formData.preferredLanguage);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed. Please check your information.');
@@ -200,8 +201,9 @@ export const RegisterPage = () => {
                   onChange={(e) => setFormData({ ...formData, preferredLanguage: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
                 >
-                  <option value="en">English</option>
-                  <option value="hi">हिन्दी (Hindi)</option>
+                  {LANGUAGE_OPTIONS.map((language) => (
+                    <option key={language.code} value={language.code}>{language.native}</option>
+                  ))}
                 </select>
               </div>
 

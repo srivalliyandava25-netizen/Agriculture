@@ -29,6 +29,9 @@ export const MarketPricesPage = () => {
   const [selectedState, setSelectedState] = useState('All States');
   const [districtSearch, setDistrictSearch] = useState('');
   const [commoditySearch, setCommoditySearch] = useState('');
+  const [marketSearch, setMarketSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,11 +42,23 @@ export const MarketPricesPage = () => {
   const [distantPrice, setDistantPrice] = useState('');
   const [transportResult, setTransportResult] = useState(null);
 
-  const fetchPrices = async () => {
+  const fetchPrices = async (filters = {}) => {
     setLoading(true);
     try {
-      const stateParam = selectedState === 'All States' ? '' : selectedState;
-      const data = await api.get(`/market/prices?state=${encodeURIComponent(stateParam)}&district=${encodeURIComponent(districtSearch)}&commodity=${encodeURIComponent(commoditySearch)}&limit=20`);
+      const state = filters.state ?? selectedState;
+      const stateParam = state === 'All States' ? '' : state;
+      const params = new URLSearchParams({
+        state: stateParam,
+        district: (filters.district ?? districtSearch).trim(),
+        commodity: (filters.commodity ?? commoditySearch).trim(),
+        marketName: (filters.marketName ?? marketSearch).trim(),
+        limit: '100'
+      });
+      const from = filters.dateFrom ?? dateFrom;
+      const to = filters.dateTo ?? dateTo;
+      if (from) params.set('dateFrom', from);
+      if (to) params.set('dateTo', to);
+      const data = await api.get(`/market/prices?${params.toString()}`);
       setPrices(data.prices || []);
     } catch (err) {
       console.error(err);
@@ -59,6 +74,16 @@ export const MarketPricesPage = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     fetchPrices();
+  };
+
+  const handleClearFilters = () => {
+    setSelectedState('All States');
+    setDistrictSearch('');
+    setCommoditySearch('');
+    setMarketSearch('');
+    setDateFrom('');
+    setDateTo('');
+    fetchPrices({ state: 'All States', district: '', commodity: '', marketName: '', dateFrom: '', dateTo: '' });
   };
 
   const handleTransportCalculate = async (e) => {
@@ -98,7 +123,7 @@ export const MarketPricesPage = () => {
 
       {/* Filter and Search Bar */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-4">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row sm:flex-wrap items-end gap-4">
           <div className="w-full sm:w-64">
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">State Filter</label>
             <select
@@ -137,12 +162,51 @@ export const MarketPricesPage = () => {
             </div>
           </div>
 
-          <div className="w-full sm:w-auto pt-5">
+          <div className="w-full sm:w-48">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">APMC / Market</label>
+            <input
+              type="text"
+              value={marketSearch}
+              onChange={(e) => setMarketSearch(e.target.value)}
+              placeholder="e.g. Lasalgaon"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm"
+            />
+          </div>
+
+          <div className="w-full sm:w-40">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">From Date</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm"
+            />
+          </div>
+
+          <div className="w-full sm:w-40">
+            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">To Date</label>
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm"
+            />
+          </div>
+
+          <div className="w-full sm:w-auto flex gap-2">
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 transition-colors shadow-sm"
+              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 transition-colors shadow-sm"
             >
               Filter Mandis
+            </button>
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 border border-slate-200 hover:bg-slate-50"
+            >
+              Clear
             </button>
           </div>
         </form>
@@ -196,6 +260,47 @@ export const MarketPricesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Price History */}
+      {prices.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Mandi Price History</h2>
+              <p className="text-xs text-slate-500 mt-1">Reported rates matching the selected filters, newest first.</p>
+            </div>
+            <Calendar className="w-5 h-5 text-primary-700" />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                  <th className="py-3 pr-4">Date</th>
+                  <th className="py-3 pr-4">Commodity</th>
+                  <th className="py-3 pr-4">Market</th>
+                  <th className="py-3 pr-4">District / State</th>
+                  <th className="py-3 pr-4">Min</th>
+                  <th className="py-3 pr-4">Modal</th>
+                  <th className="py-3">Max</th>
+                </tr>
+              </thead>
+              <tbody>
+                {prices.map((m) => (
+                  <tr key={`history-${m._id}`} className="border-b border-slate-100 last:border-0 text-slate-700">
+                    <td className="py-3 pr-4 whitespace-nowrap">{m.priceDate ? new Date(m.priceDate).toLocaleDateString('en-IN') : 'N/A'}</td>
+                    <td className="py-3 pr-4 font-bold text-slate-900">{m.commodity}</td>
+                    <td className="py-3 pr-4">{m.marketName}</td>
+                    <td className="py-3 pr-4">{m.district}, {m.state}</td>
+                    <td className="py-3 pr-4">₹{Number(m.minPrice).toLocaleString('en-IN')}</td>
+                    <td className="py-3 pr-4 font-bold text-primary-800">₹{Number(m.modalPrice).toLocaleString('en-IN')}</td>
+                    <td className="py-3">₹{Number(m.maxPrice).toLocaleString('en-IN')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Transport Economics Calculator Tool */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">

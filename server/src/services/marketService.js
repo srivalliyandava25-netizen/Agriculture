@@ -10,6 +10,10 @@ export const getMarketPrices = async ({
   state = '',
   district = '',
   commodity = '',
+  marketName = '',
+  dateFrom = '',
+  dateTo = '',
+  verifiedOnly = false,
   limit = 20,
   page = 1
 }) => {
@@ -18,6 +22,17 @@ export const getMarketPrices = async ({
   if (state) query.state = new RegExp(escapeRegex(state), 'i');
   if (district) query.district = new RegExp(escapeRegex(district), 'i');
   if (commodity) query.commodity = new RegExp(escapeRegex(commodity), 'i');
+  if (marketName) query.marketName = new RegExp(escapeRegex(marketName), 'i');
+  if (dateFrom || dateTo) {
+    query.priceDate = {};
+    if (dateFrom && !Number.isNaN(new Date(dateFrom).getTime())) query.priceDate.$gte = new Date(`${dateFrom}T00:00:00.000Z`);
+    if (dateTo && !Number.isNaN(new Date(dateTo).getTime())) query.priceDate.$lte = new Date(`${dateTo}T23:59:59.999Z`);
+  }
+  if (verifiedOnly === true || verifiedOnly === 'true') {
+    query.isSampleData = { $ne: true };
+    query.priceDate = query.priceDate || {};
+    query.priceDate.$gte = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  }
 
   const skip = (Number(page) - 1) * Number(limit);
   const total = await MarketPrice.countDocuments(query);

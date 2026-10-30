@@ -82,6 +82,7 @@ export const App = () => {
                   <Route path="/water" element={<WaterManagementPage />} />
                   <Route path="/affordable-farming" element={<AffordableFarmingPage />} />
                   <Route path="/community" element={<CommunityPage />} />
+                  <Route path="/community/:postId" element={<CommunityPage />} />
 
                   {/* Protected Farmer Routes */}
                   <Route
