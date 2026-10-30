@@ -166,6 +166,14 @@ export const App = () => {
                     }
                   />
                   <Route
+                    path="/ask-expert/:requestId"
+                    element={
+                      <ProtectedRoute>
+                        <AskExpertPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/insurance"
                     element={
                       <ProtectedRoute>

@@ -314,7 +314,7 @@ export const InsuranceAssistancePage = () => {
         <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-3">
           <h3 className="text-base font-bold text-slate-900">How to get disaster support</h3>
           <p className="text-xs text-slate-600 leading-relaxed">Report localized damage promptly to your lending bank, insurance company or CSC. For state disaster relief, contact the District Collector or emergency response office and retain revenue records and photographs.</p>
-          <a href="https://cropinsurance.gov.in/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-700">Crop insurance application and status <ExternalLink className="w-3.5 h-3.5" /></a>
+          <a href="https://pmfby.gov.in/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-700">Open official PMFBY application and status portal <ExternalLink className="w-3.5 h-3.5" /></a>
         </div>
       </div>
 

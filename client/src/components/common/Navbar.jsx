@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Sprout,
@@ -27,12 +27,46 @@ export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const moreDropdownRef = useRef(null);
+  const notifDropdownRef = useRef(null);
+  const userDropdownRef = useRef(null);
 
   useEffect(() => {
     setMobileMenuOpen(false);
     setNotifDropdownOpen(false);
     setUserDropdownOpen(false);
+    setMoreDropdownOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const closeDropdownsOutside = (event) => {
+      if (moreDropdownRef.current && !moreDropdownRef.current.contains(event.target)) {
+        setMoreDropdownOpen(false);
+      }
+      if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
+        setNotifDropdownOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    const closeDropdownsWithEscape = (event) => {
+      if (event.key === 'Escape') {
+        setMoreDropdownOpen(false);
+        setNotifDropdownOpen(false);
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeDropdownsOutside);
+    document.addEventListener('keydown', closeDropdownsWithEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeDropdownsOutside);
+      document.removeEventListener('keydown', closeDropdownsWithEscape);
+    };
+  }, []);
 
   useEffect(() => {
     const closeDesktopMenu = () => {
@@ -133,22 +167,31 @@ export const Navbar = () => {
 
             {/* More dropdown for additional tools */}
             {navLinks.length > 5 && (
-              <div className="relative group">
-                <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-700 hover:bg-slate-50">
+              <div className="relative" ref={moreDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setMoreDropdownOpen((open) => !open)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-primary-700 hover:bg-slate-50"
+                  aria-expanded={moreDropdownOpen}
+                  aria-haspopup="menu"
+                >
                   <span>More</span>
-                  <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
+                  <ChevronDown className={`w-4 h-4 transition-transform ${moreDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <div className="absolute right-0 mt-1 w-56 max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-lg border border-slate-100 py-2 hidden group-hover:block transition-all z-50">
-                  {navLinks.slice(5).map((link) => (
-                    <Link
-                      key={link.path}
-                      to={link.path}
-                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-800"
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
-                </div>
+                {moreDropdownOpen && (
+                  <div className="absolute right-0 mt-1 w-56 max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                    {navLinks.slice(5).map((link) => (
+                      <Link
+                        key={link.path}
+                        to={link.path}
+                        onClick={() => setMoreDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-800"
+                      >
+                        {link.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -181,9 +224,12 @@ export const Navbar = () => {
 
             {/* Notifications Button */}
             {isAuthenticated && (
-              <div className="relative">
+              <div className="relative" ref={notifDropdownRef}>
                 <button
-                  onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
+                  onClick={() => {
+                    setNotifDropdownOpen((open) => !open);
+                    setUserDropdownOpen(false);
+                  }}
                   className="relative p-2 text-slate-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
                   title="Notifications"
                 >
@@ -241,9 +287,12 @@ export const Navbar = () => {
 
             {/* Profile Dropdown / Sign In Buttons */}
             {isAuthenticated ? (
-              <div className="relative">
+              <div className="relative" ref={userDropdownRef}>
                 <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  onClick={() => {
+                    setUserDropdownOpen((open) => !open);
+                    setNotifDropdownOpen(false);
+                  }}
                   className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-primary-50 hover:bg-primary-100 border border-primary-200 transition-colors"
                 >
                   <div className="w-7 h-7 rounded-full bg-primary-700 text-white flex items-center justify-center font-bold text-xs">

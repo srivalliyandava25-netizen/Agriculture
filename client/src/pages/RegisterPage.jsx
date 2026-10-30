@@ -4,24 +4,7 @@ import { Sprout, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Alert } from '../components/common/Alert.jsx';
 import { LANGUAGE_OPTIONS, useLanguage } from '../context/LanguageContext.jsx';
-
-const INDIAN_STATES = [
-  'Andhra Pradesh',
-  'Bihar',
-  'Chhattisgarh',
-  'Gujarat',
-  'Haryana',
-  'Karnataka',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Odisha',
-  'Punjab',
-  'Rajasthan',
-  'Tamil Nadu',
-  'Telangana',
-  'Uttar Pradesh',
-  'West Bengal'
-];
+import { INDIAN_STATES } from '../constants/indianStates.js';
 
 export const RegisterPage = () => {
   const { register } = useAuth();

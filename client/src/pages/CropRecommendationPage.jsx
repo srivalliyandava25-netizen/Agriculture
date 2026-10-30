@@ -16,21 +16,7 @@ import {
 import { api } from '../services/api.js';
 import { Alert } from '../components/common/Alert.jsx';
 import { VoiceReader } from '../components/common/VoiceReader.jsx';
-const INDIAN_STATES = [
-  'Maharashtra',
-  'Punjab',
-  'Madhya Pradesh',
-  'Haryana',
-  'Rajasthan',
-  'Uttar Pradesh',
-  'Gujarat',
-  'Karnataka',
-  'Andhra Pradesh',
-  'Bihar',
-  'Tamil Nadu',
-  'Telangana',
-  'West Bengal'
-];
+import { INDIAN_STATES } from '../constants/indianStates.js';
 
 export const CropRecommendationPage = () => {
   const [state, setState] = useState('');
@@ -113,6 +99,7 @@ export const CropRecommendationPage = () => {
                 onChange={(e) => setState(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
               >
+                <option value="">Select state</option>
                 {INDIAN_STATES.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { LANGUAGE_OPTIONS, useLanguage } from '../context/LanguageContext.jsx';
 import { Alert } from '../components/common/Alert.jsx';
 import { api } from '../services/api.js';
+import { INDIAN_STATES } from '../constants/indianStates.js';
 
 export const ProfilePage = () => {
   const { user, profile, updateProfile, logout } = useAuth();
@@ -121,13 +122,17 @@ export const ProfilePage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">State</label>
-              <input
-                type="text"
+              <select
                 required
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm"
-              />
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
+              >
+                <option value="">Select state</option>
+                {INDIAN_STATES.map((stateName) => (
+                  <option key={stateName} value={stateName}>{stateName}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">District</label>

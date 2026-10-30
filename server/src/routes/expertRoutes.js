@@ -4,6 +4,7 @@ import {
   getMyRequests,
   getExpertRequests,
   getRequestById,
+  startRequestReview,
   respondToRequest,
   addFollowUp,
   rateConsultation
@@ -20,6 +21,7 @@ router.post('/consult', upload.single('image'), submitExpertRequest);
 router.get('/my-requests', getMyRequests);
 router.get('/expert-feed', authorize('expert', 'admin'), getExpertRequests);
 router.get('/:id', getRequestById);
+router.post('/:id/review', authorize('expert', 'admin'), startRequestReview);
 router.post('/:id/respond', authorize('expert', 'admin'), respondToRequest);
 router.post('/:id/message', addFollowUp);
 router.post('/:id/rate', rateConsultation);

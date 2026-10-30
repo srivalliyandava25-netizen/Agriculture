@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Award, Search, ExternalLink, CheckCircle2, FileText, CalendarClock, MapPin } from 'lucide-react';
 import { api } from '../services/api.js';
 import { VoiceReader } from '../components/common/VoiceReader.jsx';
+import { INDIAN_STATES } from '../constants/indianStates.js';
 
 export const GovernmentSchemesPage = () => {
   const [schemes, setSchemes] = useState([]);
@@ -83,14 +84,17 @@ export const GovernmentSchemesPage = () => {
             />
           </div>
           <div className="relative sm:w-52">
-            <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
+            <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+            <select
               value={state}
               onChange={(e) => setState(e.target.value)}
-              placeholder="State (optional)"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+            >
+              <option value="">All states / Central</option>
+              {INDIAN_STATES.map((stateName) => (
+                <option key={stateName} value={stateName}>{stateName}</option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"

@@ -3,11 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Sprout, Lock, User, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Alert } from '../components/common/Alert.jsx';
-import { useLanguage } from '../context/LanguageContext.jsx';
+import { LANGUAGE_OPTIONS, useLanguage } from '../context/LanguageContext.jsx';
 
 export const LoginPage = () => {
   const { login } = useAuth();
-  const { t } = useLanguage();
+  const { lang, setLang } = useLanguage();
   const navigate = useNavigate();
 
   const [identifier, setIdentifier] = useState('');
@@ -49,6 +49,25 @@ export const LoginPage = () => {
         {error && <Alert type="danger" message={error} onClose={() => setError('')} />}
 
         <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1" htmlFor="login-language">
+              Website Language
+            </label>
+            <select
+              id="login-language"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
+              aria-label="Choose website language"
+            >
+              {LANGUAGE_OPTIONS.map((language) => (
+                <option key={language.code} value={language.code} title={language.states}>
+                  {language.native}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">

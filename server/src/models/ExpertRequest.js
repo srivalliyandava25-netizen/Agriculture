@@ -51,6 +51,13 @@ const expertRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
+    aiResponse: {
+      diagnosis: String,
+      recommendation: String,
+      preventiveActions: String,
+      generatedAt: Date,
+      responseSource: String
+    },
     expertResponse: {
       diagnosis: String,
       recommendation: String,

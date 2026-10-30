@@ -11,6 +11,8 @@
     "seed": "npm --prefix server run seed",
     "test": "npm --prefix server test",
     "build": "npm --prefix client run build"
+  },
+  "dependencies": {
+    "nodemon": "^3.1.14"
   }
 }
-

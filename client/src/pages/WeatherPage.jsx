@@ -13,6 +13,7 @@ import {
 import { api } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { VoiceReader } from '../components/common/VoiceReader.jsx';
+import { INDIAN_STATES } from '../constants/indianStates.js';
 
 export const WeatherPage = () => {
   const { user } = useAuth();
@@ -63,14 +64,17 @@ export const WeatherPage = () => {
 
         {/* Location selector */}
         <div className="flex items-center gap-2">
-          <input
-            type="text"
+          <select
             value={state}
             onChange={(e) => setState(e.target.value)}
-            placeholder="Enter state"
             required
-            className="w-32 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
-          />
+            className="w-44 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            <option value="">Select state</option>
+            {INDIAN_STATES.map((stateName) => (
+              <option key={stateName} value={stateName}>{stateName}</option>
+            ))}
+          </select>
           <input
             type="text"
             value={district}

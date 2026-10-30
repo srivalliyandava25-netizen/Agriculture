@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   BookOpen,
   Send,
@@ -16,6 +17,7 @@ import { Alert } from '../components/common/Alert.jsx';
 import { VoiceReader } from '../components/common/VoiceReader.jsx';
 
 export const AskExpertPage = () => {
+  const { requestId } = useParams();
   const { user, isExpert, isAdmin } = useAuth();
 
   const [requests, setRequests] = useState([]);
@@ -40,31 +42,62 @@ export const AskExpertPage = () => {
 
   // Follow-up message
   const [followUpText, setFollowUpText] = useState('');
+  const [followUpLoading, setFollowUpLoading] = useState(false);
 
   // Rating
   const [rating, setRating] = useState(5);
   const [feedback, setFeedback] = useState('');
 
-  const fetchRequests = async () => {
-    setLoading(true);
+  const fetchRequests = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
-      if (isExpert || isAdmin) {
-        const data = await api.get('/experts/expert-feed');
-        setRequests(data.requests || []);
-      } else {
-        const data = await api.get('/experts/my-requests');
-        setRequests(data.requests || []);
-      }
+      const data = isExpert || isAdmin
+        ? await api.get('/experts/expert-feed')
+        : await api.get('/experts/my-requests');
+      const nextRequests = data.requests || [];
+      setRequests(nextRequests);
+      setSelectedRequest((current) =>
+        current ? nextRequests.find((request) => request._id === current._id) || null : current
+      );
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchRequests();
+    const interval = setInterval(() => fetchRequests({ silent: true }), 30000);
+    return () => clearInterval(interval);
   }, [isExpert, isAdmin]);
+
+  useEffect(() => {
+    if (requestId && requests.length > 0) {
+      const linkedRequest = requests.find((request) => request._id === requestId);
+      if (linkedRequest) setSelectedRequest(linkedRequest);
+    }
+  }, [requestId, requests]);
+
+  const handleSelectRequest = async (request) => {
+    setSelectedRequest((current) => current?._id === request._id ? null : request);
+
+    if (
+      (isExpert || isAdmin) &&
+      selectedRequest?._id !== request._id &&
+      ['submitted', 'assigned'].includes(request.status)
+    ) {
+      try {
+        const data = await api.post(`/experts/${request._id}/review`, {});
+        if (data.request) {
+          setSelectedRequest(data.request);
+          fetchRequests({ silent: true });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   const handleSubmitRequest = async (e) => {
     e.preventDefault();
@@ -86,7 +119,7 @@ export const AskExpertPage = () => {
       setStateName('');
       setDistrict('');
       setImageFile(null);
-      setMessage('Your consultation query has been registered with our agricultural specialists.');
+      setMessage('Your immediate AI advisory is ready. Ask a follow-up question anytime for another AI answer.');
       fetchRequests();
     } catch (err) {
       alert(err.message);
@@ -112,7 +145,8 @@ export const AskExpertPage = () => {
 
   const handleSendFollowUp = async (e) => {
     e.preventDefault();
-    if (!followUpText.trim() || !selectedRequest) return;
+    if (!followUpText.trim() || !selectedRequest || followUpLoading) return;
+    setFollowUpLoading(true);
     try {
       const data = await api.post(`/experts/${selectedRequest._id}/message`, {
         message: followUpText
@@ -121,6 +155,8 @@ export const AskExpertPage = () => {
       setFollowUpText('');
     } catch (err) {
       alert(err.message);
+    } finally {
+      setFollowUpLoading(false);
     }
   };
 
@@ -215,7 +251,12 @@ export const AskExpertPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">State</label>
-              <input required value={stateName} onChange={(e) => setStateName(e.target.value)} placeholder="Your state" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm" />
+              <select required value={stateName} onChange={(e) => setStateName(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white">
+                <option value="">Select your state</option>
+                {INDIAN_STATES.map((state) => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">District</label>
@@ -312,7 +353,16 @@ export const AskExpertPage = () => {
             requests.map((req) => (
               <div
                 key={req._id}
-                onClick={() => setSelectedRequest(req)}
+                role="button"
+                tabIndex={0}
+                aria-expanded={selectedRequest?._id === req._id}
+                onClick={() => handleSelectRequest(req)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectRequest(req);
+                  }
+                }}
                 className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                   selectedRequest?._id === req._id
                     ? 'border-primary-500 bg-primary-50/50 shadow-sm'
@@ -321,8 +371,8 @@ export const AskExpertPage = () => {
               >
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase mb-1">
                   <span className="text-slate-400">{req.cropName || 'General'}</span>
-                  <span className={`px-2 py-0.5 rounded-full ${req.status === 'answered' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                    {req.status}
+                  <span className={`px-2 py-0.5 rounded-full ${['answered', 'closed'].includes(req.status) ? 'bg-emerald-100 text-emerald-800' : req.status === 'in_review' || req.status === 'assigned' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
+                    {req.status === 'answered' ? 'Completed' : req.status === 'in_review' ? 'In Review' : req.status === 'assigned' ? 'Assigned' : req.status === 'closed' ? 'Closed' : 'Submitted'}
                   </span>
                 </div>
                 <h4 className="font-extrabold text-sm text-slate-900 line-clamp-1">{req.title}</h4>
@@ -359,6 +409,33 @@ export const AskExpertPage = () => {
               {selectedRequest.imageUrl && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 max-h-64 bg-slate-100">
                   <img src={selectedRequest.imageUrl} alt="Symptom" className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              {/* Immediate AI Advisory */}
+              {selectedRequest.aiResponse?.diagnosis && !selectedRequest.expertResponse?.diagnosis && (
+                <div className="p-5 rounded-2xl bg-blue-50 border border-blue-200 space-y-3 text-xs">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-bold text-sm text-blue-950">Mitti Mitra AI Preliminary Advisory</span>
+                    <VoiceReader
+                      text={`Diagnosis: ${selectedRequest.aiResponse.diagnosis}. Recommendation: ${selectedRequest.aiResponse.recommendation}. Preventive Actions: ${selectedRequest.aiResponse.preventiveActions}`}
+                    />
+                  </div>
+                  <div>
+                    <span className="font-bold text-blue-900 block">Preliminary Assessment:</span>
+                    <p className="text-blue-950">{selectedRequest.aiResponse.diagnosis}</p>
+                  </div>
+                  <div>
+                    <span className="font-bold text-blue-900 block">Recommended Next Steps:</span>
+                    <p className="text-blue-950">{selectedRequest.aiResponse.recommendation}</p>
+                  </div>
+                  <div>
+                    <span className="font-bold text-blue-900 block">Prevention and Safety:</span>
+                    <p className="text-blue-950">{selectedRequest.aiResponse.preventiveActions}</p>
+                  </div>
+                  <p className="text-[10px] text-blue-700 border-t border-blue-200 pt-2">
+                    AI-generated guidance for immediate crop support. Follow approved product labels and seek local agricultural help for severe or rapidly spreading symptoms.
+                  </p>
                 </div>
               )}
 
@@ -439,11 +516,7 @@ export const AskExpertPage = () => {
                     Submit Verified Advisory
                   </button>
                 </form>
-              ) : (
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-                  Your query has been assigned to a specialist and is currently under agronomic evaluation.
-                </div>
-              )}
+              ) : null}
 
               {/* Follow-up Message Thread */}
               <div className="space-y-3 pt-4 border-t border-slate-100">
@@ -470,9 +543,10 @@ export const AskExpertPage = () => {
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-primary-700 hover:bg-primary-800"
+                    disabled={followUpLoading || !followUpText.trim()}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Send
+                    {followUpLoading ? 'AI is answering...' : 'Send'}
                   </button>
                 </form>
               </div>
@@ -509,7 +583,7 @@ export const AskExpertPage = () => {
           ) : (
             <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-xs text-slate-500 space-y-2">
               <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
-              <p>Select a consultation query from the left to view specialist diagnosis and recommendations.</p>
+              <p>Select a consultation query from the left to view AI diagnosis and recommendations.</p>
             </div>
           )}
         </div>

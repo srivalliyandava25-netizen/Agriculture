@@ -12,18 +12,9 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api.js';
 import { VoiceReader } from '../components/common/VoiceReader.jsx';
+import { INDIAN_STATES } from '../constants/indianStates.js';
 
-const INDIAN_STATES = [
-  'All States',
-  'Maharashtra',
-  'Punjab',
-  'Madhya Pradesh',
-  'Gujarat',
-  'Rajasthan',
-  'Andhra Pradesh',
-  'Haryana',
-  'Uttar Pradesh'
-];
+const MARKET_STATES = ['All States', ...INDIAN_STATES];
 
 export const MarketPricesPage = () => {
   const [selectedState, setSelectedState] = useState('All States');
@@ -34,6 +25,7 @@ export const MarketPricesPage = () => {
   const [dateTo, setDateTo] = useState('');
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [marketError, setMarketError] = useState('');
 
   // Transport calculator states
   const [distanceKm, setDistanceKm] = useState('');
@@ -44,6 +36,7 @@ export const MarketPricesPage = () => {
 
   const fetchPrices = async (filters = {}) => {
     setLoading(true);
+    setMarketError('');
     try {
       const state = filters.state ?? selectedState;
       const stateParam = state === 'All States' ? '' : state;
@@ -62,6 +55,8 @@ export const MarketPricesPage = () => {
       setPrices(data.prices || []);
     } catch (err) {
       console.error(err);
+      setPrices([]);
+      setMarketError(err.message || 'Mandi prices could not be loaded. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -121,6 +116,90 @@ export const MarketPricesPage = () => {
         Prices shown may be reference or sample data. Before selling, verify the latest rate with the relevant APMC, trader, or official Agmarknet portal.
       </div>
 
+{/* Transport Economics Calculator Tool */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
+        <div>
+          <span className="text-xs font-bold text-primary-800 bg-primary-100 px-3 py-1 rounded-full uppercase tracking-wider">
+            Selling Strategy
+          </span>
+          <h2 className="text-2xl font-bold text-slate-900 mt-2">Mandi Transport Profitability Calculator</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Compare if hiring freight to travel to a distant bigger mandi yields a real net profit over selling locally.
+          </p>
+        </div>
+
+        <form onSubmit={handleTransportCalculate} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Distance (km)</label>
+            <input
+              type="number"
+              required
+              min="0"
+              value={distanceKm}
+              onChange={(e) => setDistanceKm(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Produce Quantity (Quintals)</label>
+            <input
+              type="number"
+              required
+              min="0.1"
+              value={produceQuantity}
+              onChange={(e) => setProduceQuantity(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Local Mandi Price (₹/qtl)</label>
+            <input
+              type="number"
+              required
+              min="0"
+              value={localPrice}
+              onChange={(e) => setLocalPrice(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Distant Mandi Price (₹/qtl)</label>
+            <input
+              type="number"
+              required
+              min="0"
+              value={distantPrice}
+              onChange={(e) => setDistantPrice(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
+            />
+          </div>
+
+          <div className="sm:col-span-4">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 transition-colors shadow-sm"
+            >
+              <Truck className="w-4 h-4" />
+              <span>Evaluate Transport Economics</span>
+            </button>
+          </div>
+        </form>
+
+        {transportResult && (
+          <div className={`p-5 rounded-2xl border text-xs space-y-2 ${transportResult.isDistantMandiEconomical ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-amber-50 border-amber-200 text-amber-950'}`}>
+            <h4 className="font-bold text-sm">
+              {transportResult.isDistantMandiEconomical ? 'Distant Mandi Recommended' : 'Local Mandi Recommended'}
+            </h4>
+            <p className="leading-relaxed">{transportResult.recommendation}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[11px]">
+              <div>Estimated Freight: <span className="font-bold">₹{transportResult.totalTransportCost}</span></div>
+              <div>Freight / Quintal: <span className="font-bold">₹{transportResult.transportCostPerQuintal}</span></div>
+              <div>Net Gain / Loss: <span className="font-bold">₹{transportResult.netExtraProfitOrLoss}</span></div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Filter and Search Bar */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row sm:flex-wrap items-end gap-4">
@@ -131,7 +210,7 @@ export const MarketPricesPage = () => {
               onChange={(e) => setSelectedState(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
             >
-              {INDIAN_STATES.map((s) => (
+              {MARKET_STATES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -221,8 +300,16 @@ export const MarketPricesPage = () => {
 
         {loading ? (
           <p className="text-xs text-slate-500 py-10 text-center">Loading mandi prices...</p>
+        ) : marketError ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-8 text-center">
+            <p className="text-sm font-bold text-rose-800">Unable to load mandi prices</p>
+            <p className="mt-1 text-xs text-rose-700">{marketError}</p>
+          </div>
         ) : prices.length === 0 ? (
-          <p className="text-xs text-slate-500 py-10 text-center">No market prices found matching your search.</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+            <p className="text-sm font-bold text-slate-700">No mandi prices found</p>
+            <p className="mt-1 text-xs text-slate-500">Try clearing the filters, choosing another state, or checking the market again later.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {prices.map((m) => (
@@ -253,7 +340,7 @@ export const MarketPricesPage = () => {
 
                 <div className="pt-2 text-[10px] text-slate-400 flex items-center justify-between border-t border-slate-100">
                   <span>Mandi: {m.marketName}</span>
-                  <span>{new Date(m.priceDate).toLocaleDateString()}</span>
+                  <span>{m.isSampleData ? 'Reference' : (m.dataSource || 'Mandi record')} · {new Date(m.priceDate).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}
@@ -302,89 +389,7 @@ export const MarketPricesPage = () => {
         </div>
       )}
 
-      {/* Transport Economics Calculator Tool */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm space-y-6">
-        <div>
-          <span className="text-xs font-bold text-primary-800 bg-primary-100 px-3 py-1 rounded-full uppercase tracking-wider">
-            Selling Strategy
-          </span>
-          <h2 className="text-2xl font-bold text-slate-900 mt-2">Mandi Transport Profitability Calculator</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Compare if hiring freight to travel to a distant bigger mandi yields a real net profit over selling locally.
-          </p>
-        </div>
 
-        <form onSubmit={handleTransportCalculate} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Distance (km)</label>
-            <input
-              type="number"
-              required
-              min="0"
-              value={distanceKm}
-              onChange={(e) => setDistanceKm(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Produce Quantity (Quintals)</label>
-            <input
-              type="number"
-              required
-              min="0.1"
-              value={produceQuantity}
-              onChange={(e) => setProduceQuantity(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Local Mandi Price (₹/qtl)</label>
-            <input
-              type="number"
-              required
-              min="0"
-              value={localPrice}
-              onChange={(e) => setLocalPrice(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Distant Mandi Price (₹/qtl)</label>
-            <input
-              type="number"
-              required
-              min="0"
-              value={distantPrice}
-              onChange={(e) => setDistantPrice(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm"
-            />
-          </div>
-
-          <div className="sm:col-span-4">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 transition-colors shadow-sm"
-            >
-              <Truck className="w-4 h-4" />
-              <span>Evaluate Transport Economics</span>
-            </button>
-          </div>
-        </form>
-
-        {transportResult && (
-          <div className={`p-5 rounded-2xl border text-xs space-y-2 ${transportResult.isDistantMandiEconomical ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-amber-50 border-amber-200 text-amber-950'}`}>
-            <h4 className="font-bold text-sm">
-              {transportResult.isDistantMandiEconomical ? 'Distant Mandi Recommended' : 'Local Mandi Recommended'}
-            </h4>
-            <p className="leading-relaxed">{transportResult.recommendation}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[11px]">
-              <div>Estimated Freight: <span className="font-bold">₹{transportResult.totalTransportCost}</span></div>
-              <div>Freight / Quintal: <span className="font-bold">₹{transportResult.transportCostPerQuintal}</span></div>
-              <div>Net Gain / Loss: <span className="font-bold">₹{transportResult.netExtraProfitOrLoss}</span></div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
