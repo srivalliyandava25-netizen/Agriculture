@@ -1,0 +1,4 @@
+{
+  "nav": {"home":"मुख्यपृष्ठ","dashboard":"डॅशबोर्ड","soilAnalysis":"माती आरोग्य","cropRecommend":"पीक","weather":"हवामान","schemes":"सरकारी योजना","expert":"तज्ञांना विचारा","sustainability":"शाश्वत शेती"},
+  "voiceAssistant": {"title":"आवाज सहाय्यक","placeholder":"तुमचा शेतसंबंधी प्रश्न टाइप करा...","prompt":"तुमचे प्रश्न घ्या","reply":"फसल निवडीसाठी Soil Health चाचणीचा तपशील वापरा."}
+}

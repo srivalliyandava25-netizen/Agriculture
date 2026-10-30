@@ -1,0 +1,16 @@
+{
+  "name": "mitti-mitra",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mitti Mitra - Smart Farming and Farmer Livelihood Platform",
+  "scripts": {
+    "start": "node server/src/server.js",
+    "server": "npm --prefix server start",
+    "server:dev": "npm --prefix server run dev",
+    "client": "npm --prefix client dev",
+    "seed": "npm --prefix server run seed",
+    "test": "npm --prefix server test",
+    "build": "npm --prefix client run build"
+  }
+}
+

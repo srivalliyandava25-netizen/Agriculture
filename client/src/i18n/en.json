@@ -1,0 +1,59 @@
+{
+  "appName": "Mitti Mitra",
+  "tagline": "Better Soil. Better Crops. Better Livelihood.",
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "soilAnalysis": "Soil Health",
+    "cropRecommend": "Crops",
+    "fertilizer": "Fertilizer",
+    "disease": "Plant Doctor",
+    "weather": "Weather",
+    "expenses": "Calculator",
+    "market": "Mandi Prices",
+    "schemes": "Govt Schemes",
+    "calendar": "Calendar",
+    "community": "Community",
+    "expert": "Ask Expert",
+    "sustainability": "Sustainable Farming",
+    "affordableFarming": "Affordable Farming",
+    "insurance": "Disaster & Insurance",
+    "about": "About Us",
+    "features": "Features",
+    "login": "Sign In",
+    "register": "Register",
+    "logout": "Sign Out",
+    "admin": "Admin Panel"
+  },
+  "hero": {
+    "title": "Empowering Indian Farmers with Smart Agricultural Intelligence",
+    "subtitle": "Upload your soil photo, get ICAR-guided crop recommendations, optimize fertilizers, diagnose plant diseases, and track mandi prices — all in one accessible platform.",
+    "getStarted": "Get Started Free",
+    "analyzeSoil": "Analyze My Soil",
+    "exploreFeatures": "Explore Features"
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "farmOverview": "Farm Overview",
+    "latestSoil": "Latest Soil Report",
+    "recommendedCrops": "Top Recommended Crops",
+    "weatherAlert": "Agro-Weather Advisory",
+    "upcomingTasks": "Upcoming Farming Activities",
+    "marketTrends": "Local Mandi Prices",
+    "financialSummary": "Cultivation Financials",
+    "quickActions": "Quick Farmer Actions",
+    "noSoilReport": "No soil test registered yet. Test your soil to unlock custom crop and fertilizer recommendations."
+  },
+  "actions": {
+    "save": "Save",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "calculate": "Calculate",
+    "viewDetails": "View Details",
+    "downloadPdf": "Download / Print Report",
+    "askQuestion": "Ask Question",
+    "readAloud": "Listen (Voice)",
+    "stopVoice": "Stop Voice"
+  }
+}
+

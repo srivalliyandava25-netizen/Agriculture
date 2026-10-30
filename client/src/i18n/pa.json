@@ -1,0 +1,4 @@
+{
+  "nav": {"home":"ਹੋਮ","dashboard":"ਡੈਸ਼ਬੋਰਡ","soilAnalysis":"ਮਿੱਟੀ ਸਿਹਤ","cropRecommend":"ਫਸਲ","weather":"ਮੌਸਮ","schemes":"ਸਰਕਾਰੀ ਯੋਜਨਾਵਾਂ","expert":"ਮਾਹਰ ਪੁੱਛੋ","sustainability":"ਟਿਕाऊ ਖੇਤੀ"},
+  "voiceAssistant": {"title":"ਆਵਾਜ਼ ਸਹਾਇਕ","placeholder":"ਆਪਣਾ ਖੇਤੀ ਸਬੰਧੀ ਸਵਾਲ ਲਿਖੋ...","prompt":"ਆਪਣਾ ਸਵਾਲ ਪੁੱਛੋ","reply":"ਫਸਲ ਦੀ ਸਿਫ਼ਾਰਸ਼ ਲਈ ਮਿੱਟੀ ਟੈਸਟ ਦੇ ਨਤੀਜੇ ਵਰਤੋ."}
+}
