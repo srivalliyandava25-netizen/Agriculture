@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Mic, MicOff, Send, Volume2, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { api } from '../../services/api.js';
 
 const localeByLanguage = {
   en: 'en-IN', hi: 'hi-IN', bn: 'bn-IN', te: 'te-IN', ta: 'ta-IN', mr: 'mr-IN',
@@ -45,6 +46,7 @@ export const VoiceAssistant = () => {
   const [listening, setListening] = useState(false);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
+  const [answering, setAnswering] = useState(false);
   const [error, setError] = useState('');
   const recognitionRef = useRef(null);
   const recognitionActiveRef = useRef(false);
@@ -80,13 +82,27 @@ export const VoiceAssistant = () => {
     return responseByLanguage[selectedLanguage] || responseByLanguage.en;
   };
 
-  const processQuestion = (text) => {
+  const processQuestion = async (text) => {
     const trimmedText = text.trim();
     if (!trimmedText) return;
     setQuestion(trimmedText);
-    const response = getAnswer(trimmedText);
-    setAnswer(response);
-    speak(response);
+    setAnswering(true);
+    setError('');
+    try {
+      const result = await api.post('/assistant/ask', {
+        question: trimmedText,
+        languageCode: langRef.current
+      });
+      const response = result.answer || getAnswer(trimmedText);
+      setAnswer(response);
+      speak(response);
+    } catch (requestError) {
+      const fallback = getAnswer(trimmedText);
+      setAnswer(fallback);
+      setError(requestError.message || 'Could not reach the AI assistant. Showing available guidance instead.');
+    } finally {
+      setAnswering(false);
+    }
   };
 
   useEffect(() => {
@@ -187,11 +203,7 @@ export const VoiceAssistant = () => {
 
   const ask = (e) => {
     e?.preventDefault();
-    const text = question.trim();
-    if (!text) return;
-    const response = getAnswer(text);
-    setAnswer(response);
-    speak(response);
+    processQuestion(question);
   };
 
   return (
@@ -214,8 +226,8 @@ export const VoiceAssistant = () => {
           </form>
           {error && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[10px] font-semibold text-red-700" role="alert">{error}</p>}
           {listening && <p className="mt-2 text-[10px] font-bold text-red-600">Listening…</p>}
-          {answer && <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950"><div className="mb-2 flex items-center justify-between font-bold"><span>Answer</span><button type="button" onClick={() => speak(answer)}><Volume2 className="w-4 h-4" /></button></div>{answer}</div>}
-        </section>
+          {answering && <p className="mt-2 text-[10px] font-bold text-primary-700" role="status">Generating answer…</p>}
+          {answer && <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950"><div className="mb-2 flex items-center justify-between font-bold"><span>Answer</span><button type="button" onClick={() => speak(answer)}><Volume2 className="w-4 h-4" /></button></div>{answer}</div>}        </section>
       )}
     </>
   );
