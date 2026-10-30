@@ -10,20 +10,81 @@ const weatherCodeDescriptions = {
 
 const describeWeather = (code) => weatherCodeDescriptions[Number(code)] || 'Variable conditions';
 
+const DISTRICT_ALIASES = {
+  sirmaur: ['Nahan', 'Sirmaur', 'Sirmour'],
+  sirmour: ['Nahan', 'Sirmaur', 'Sirmour'],
+  bellary: ['Ballari'], ballari: ['Ballari', 'Bellary'],
+  bangalore: ['Bengaluru'], bengaluru: ['Bengaluru', 'Bangalore'],
+  bijapur: ['Vijayapura'], vijayapura: ['Vijayapura', 'Bijapur'],
+  gurgaon: ['Gurugram'], gurugram: ['Gurugram', 'Gurgaon'],
+  hooghly: ['Hooghly', 'Chinsurah'],
+  nayagarh: ['Nayagarh', 'Nayagarh town'],
+  solan: ['Solan'], kangra: ['Dharamshala', 'Kangra'],
+  shimla: ['Shimla'], mandi: ['Mandi'], kullu: ['Kullu'], una: ['Una'],
+};
+
+const STATE_COORDINATES = {
+  'Himachal Pradesh': { latitude: 31.1048, longitude: 77.1734, name: 'Shimla' },
+  'Andhra Pradesh': { latitude: 16.5062, longitude: 80.6480, name: 'Vijayawada' },
+  'Arunachal Pradesh': { latitude: 27.0844, longitude: 93.6053, name: 'Itanagar' },
+  Assam: { latitude: 26.1445, longitude: 91.7362, name: 'Guwahati' },
+  Bihar: { latitude: 25.5941, longitude: 85.1376, name: 'Patna' },
+  Chhattisgarh: { latitude: 21.2514, longitude: 81.6296, name: 'Raipur' },
+  Delhi: { latitude: 28.6139, longitude: 77.2090, name: 'Delhi' },
+  Goa: { latitude: 15.2993, longitude: 74.1240, name: 'Panaji' },
+  Gujarat: { latitude: 23.0225, longitude: 72.5714, name: 'Ahmedabad' },
+  Haryana: { latitude: 28.4595, longitude: 77.0266, name: 'Gurugram' },
+  Jharkhand: { latitude: 23.3441, longitude: 85.3096, name: 'Ranchi' },
+  Karnataka: { latitude: 12.9716, longitude: 77.5946, name: 'Bengaluru' },
+  Kerala: { latitude: 8.5241, longitude: 76.9366, name: 'Thiruvananthapuram' },
+  'Madhya Pradesh': { latitude: 23.2599, longitude: 77.4126, name: 'Bhopal' },
+  Maharashtra: { latitude: 19.0760, longitude: 72.8777, name: 'Mumbai' },
+  Odisha: { latitude: 20.2961, longitude: 85.8245, name: 'Bhubaneswar' },
+  Punjab: { latitude: 30.7333, longitude: 76.7794, name: 'Chandigarh' },
+  Rajasthan: { latitude: 26.9124, longitude: 75.7873, name: 'Jaipur' },
+  'Tamil Nadu': { latitude: 13.0827, longitude: 80.2707, name: 'Chennai' },
+  Telangana: { latitude: 17.3850, longitude: 78.4867, name: 'Hyderabad' },
+  'Uttar Pradesh': { latitude: 26.8467, longitude: 80.9462, name: 'Lucknow' },
+  Uttarakhand: { latitude: 30.3165, longitude: 78.0322, name: 'Dehradun' },
+  'West Bengal': { latitude: 22.5726, longitude: 88.3639, name: 'Kolkata' }
+};
+
+const normalizePlace = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
 export const getWeatherData = async (state = '', district = '') => {
   const apiKey = config.weatherApiKey;
+  let location = null;
 
   try {
-    const searchDistrict = encodeURIComponent(district.trim());
-    const locationResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${searchDistrict}&count=10&language=en&format=json`);
-    if (!locationResponse.ok) throw new Error('Location lookup is unavailable');
-    const locationData = await locationResponse.json();
-    const indianLocations = (locationData.results || []).filter((item) => item.country_code === 'IN');
-    const location = indianLocations.find((item) =>
-      String(item.admin1 || '').toLowerCase() === state.trim().toLowerCase() ||
-      String(item.admin2 || '').toLowerCase().includes(district.trim().toLowerCase())
-    ) || indianLocations[0];
-    if (!location) throw new Error('No weather station location found for this district');
+    const districtName = district.trim();
+    const normalizedDistrict = normalizePlace(districtName);
+    const searchNames = [...(DISTRICT_ALIASES[normalizedDistrict] || [districtName]), `${districtName}, ${state}`];
+
+    const indianLocations = [];
+    for (const searchName of [...new Set(searchNames)]) {
+      const searchDistrict = encodeURIComponent(searchName);
+      const locationResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${searchDistrict}&count=10&language=en&format=json`);
+      if (!locationResponse.ok) continue;
+      const locationData = await locationResponse.json();
+      indianLocations.push(...(locationData.results || []).filter((item) => item.country_code === 'IN'));
+      if (indianLocations.length) break;
+    }
+
+    const normalizedState = normalizePlace(state);
+    location = indianLocations.find((item) => {
+      const admin1 = normalizePlace(item.admin1);
+      const admin2 = normalizePlace(item.admin2);
+      return admin1.includes(normalizedState) || normalizedState.includes(admin1) || admin2.includes(normalizedDistrict);
+    }) || indianLocations.find((item) => normalizePlace(item.admin1).includes(normalizedState)) || indianLocations[0];
+
+    if (!location) {
+      const stateEntry = Object.entries(STATE_COORDINATES).find(([stateName]) => normalizePlace(stateName) === normalizedState);
+      const stateFallback = stateEntry?.[1] || { latitude: 22.5937, longitude: 78.9629, name: 'India' };
+      location = {
+        ...stateFallback,
+        name: normalizedDistrict ? `${districtName} (${stateFallback.name})` : stateFallback.name
+      };
+    }
 
     const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,uv_index_max&timezone=auto&forecast_days=6`);
     if (!weatherResponse.ok) throw new Error('Live weather forecast is unavailable');

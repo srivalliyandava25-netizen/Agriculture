@@ -3,8 +3,8 @@ import { WeatherAlert } from '../models/WeatherAlert.js';
 
 export const getWeather = async (req, res, next) => {
   try {
-    const state = req.query.state || req.user?.state;
-    const district = req.query.district || req.user?.district;
+    const state = String(req.query.state || req.user?.state || '').trim();
+    const district = String(req.query.district || req.user?.district || '').trim();
 
     if (!state || !district) {
       return res.status(400).json({
