@@ -1,4 +1,4 @@
-# Mitti Mitra (मिट्टीमित्र) — AI-Powered Smart Farming and Farmer Livelihood Platform
+# Mithi Mitra (मिट्टीमित्र) — AI-Powered Smart Farming and Farmer Livelihood Platform
 
 > **Tagline:** Better Soil. Better Crops. Better Livelihood.  
 > **Theme:** Environment, Sustainable Agriculture, Farmer Empowerment, and Rural Livelihood Improvement.
@@ -9,14 +9,14 @@
 
 ## 1. Project Overview & Mission
 
-**Mitti Mitra** is a full-stack, production-minded agricultural intelligence web platform tailored specifically for Indian farmers, agronomists, and rural agricultural stakeholders.
+**Mithi Mitra** is a full-stack, production-minded agricultural intelligence web platform tailored specifically for Indian farmers, agronomists, and rural agricultural stakeholders.
 
 Indian agriculture faces compounded challenges:
 1. **Soil Exhaustion & Chemical Imbalance:** Heavy over-application of synthetic Nitrogen (Urea) has depleted soil organic carbon (<0.5%) and damaged natural microbial biodiversity.
 2. **Asymmetric Market Intelligence:** Middlemen exploit price opacity during post-harvest gluts.
 3. **Severe Weather & Stubble Burning:** Climate instability, unseasonal rains, and crop residue fires cause severe economic distress and atmospheric pollution.
 
-Mitti Mitra bridges these gaps by providing:
+Mithi Mitra bridges these gaps by providing:
 - **Scientific Soil Health Card Reports** that separate visual surface observations from laboratory titration metrics.
 - **ICAR-Guided Agro-Climatic Crop Recommendation Engine** matching season, soil, irrigation, and rotation history.
 - **4R Nutrient Stewardship & Integrated Nutrient Management (INM)** calculating exact DAP, Urea, and MOP doses while incorporating Vermicompost and green manure.
