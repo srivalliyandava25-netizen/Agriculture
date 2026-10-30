@@ -159,7 +159,7 @@ export const LanguageProvider = ({ children }) => {
   };
 
   // Web Speech API Text-to-Speech
-  const speak = (text) => {
+  const speak = (text, languageCode = lang) => {
     if (!('speechSynthesis' in window)) {
       alert('Voice synthesis is not supported on this browser.');
       return;
@@ -169,7 +169,7 @@ export const LanguageProvider = ({ children }) => {
     if (!text) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
-    const requestedLocale = SPEECH_LANGUAGE_CODES[lang] || 'en-IN';
+    const requestedLocale = SPEECH_LANGUAGE_CODES[languageCode] || SPEECH_LANGUAGE_CODES[lang] || 'en-IN';
     utterance.lang = requestedLocale;
     utterance.rate = 0.9;
 

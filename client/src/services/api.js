@@ -1,4 +1,9 @@
-const BASE_URL = `${import.meta.env.VITE_API_URL}/api`;
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const defaultApiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : 'https://agriculture-kgjl.onrender.com';
+const apiRoot = (configuredApiUrl || defaultApiUrl).replace(/\/$/, '').replace(/\/api$/, '');
+const BASE_URL = `${apiRoot}/api`;
 
 export const request = async (endpoint, options = {}) => {
   const token = localStorage.getItem('mittimitra_token');

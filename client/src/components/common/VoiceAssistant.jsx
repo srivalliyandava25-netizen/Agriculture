@@ -95,7 +95,7 @@ export const VoiceAssistant = () => {
       });
       const response = result.answer || getAnswer(trimmedText);
       setAnswer(response);
-      speak(response);
+      speak(response, langRef.current);
     } catch (requestError) {
       const fallback = getAnswer(trimmedText);
       setAnswer(fallback);
@@ -227,7 +227,7 @@ export const VoiceAssistant = () => {
           {error && <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[10px] font-semibold text-red-700" role="alert">{error}</p>}
           {listening && <p className="mt-2 text-[10px] font-bold text-red-600">Listening…</p>}
           {answering && <p className="mt-2 text-[10px] font-bold text-primary-700" role="status">Generating answer…</p>}
-          {answer && <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950"><div className="mb-2 flex items-center justify-between font-bold"><span>Answer</span><button type="button" onClick={() => speak(answer)}><Volume2 className="w-4 h-4" /></button></div>{answer}</div>}        </section>
+          {answer && <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-950"><div className="mb-2 flex items-center justify-between font-bold"><span>Answer</span><button type="button" onClick={() => speak(answer, langRef.current)}><Volume2 className="w-4 h-4" /></button></div>{answer}</div>}        </section>
       )}
     </>
   );

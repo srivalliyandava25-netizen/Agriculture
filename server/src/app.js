@@ -58,17 +58,34 @@ app.use(
 );
 
 // CORS configuration
+const configuredClientOrigins = [
+  config.clientUrl,
+  process.env.CLIENT_URLS || '',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:4174',
+  'http://127.0.0.1:4174'
+].flatMap((value) => String(value || '').split(','))
+  .map((value) => value.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const allowedCorsOrigin = (origin, callback) => {
+  if (!origin) return callback(null, true);
+  const normalizedOrigin = origin.replace(/\/$/, '');
+  const isConfiguredOrigin = configuredClientOrigins.includes(normalizedOrigin);
+  const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedOrigin);
+  const isRenderOrigin = /^https:\/\/[^.]+\.onrender\.com$/i.test(normalizedOrigin);
+  if (isConfiguredOrigin || isLocalOrigin || isRenderOrigin) return callback(null, true);
+  return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+};
+
 app.use(
   cors({
-    origin: [
-      config.clientUrl,
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:4174',
-      'http://127.0.0.1:4174'
-    ],
+    origin: allowedCorsOrigin,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204
   })
 );
 
