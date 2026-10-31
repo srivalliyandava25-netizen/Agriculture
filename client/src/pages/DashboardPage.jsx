@@ -35,10 +35,7 @@ export const DashboardPage = () => {
   const [activities, setActivities] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [referralCopied, setReferralCopied] = useState(false);
-  const referralCode = user?.referralCode || user?._id?.slice(-8)?.toUpperCase() || '';
-  const referralLink = typeof window !== 'undefined' && referralCode
-    ? `${window.location.origin}/register?ref=${encodeURIComponent(referralCode)}`
-    : '';
+  const referralLink = 'https://agriculture-1-frontend.onrender.com/';
 
   const loadDashboardData = async () => {
     setLoading(true);

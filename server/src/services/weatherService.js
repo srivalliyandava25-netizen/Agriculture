@@ -46,10 +46,33 @@ const STATE_COORDINATES = {
   Telangana: { latitude: 17.3850, longitude: 78.4867, name: 'Hyderabad' },
   'Uttar Pradesh': { latitude: 26.8467, longitude: 80.9462, name: 'Lucknow' },
   Uttarakhand: { latitude: 30.3165, longitude: 78.0322, name: 'Dehradun' },
-  'West Bengal': { latitude: 22.5726, longitude: 88.3639, name: 'Kolkata' }
+  'West Bengal': { latitude: 22.5726, longitude: 88.3639, name: 'Kolkata' },
+  Meghalaya: { latitude: 25.5788, longitude: 91.8933, name: 'Shillong' },
+  Manipur: { latitude: 24.8170, longitude: 93.9368, name: 'Imphal' },
+  Mizoram: { latitude: 23.7271, longitude: 92.7176, name: 'Aizawl' },
+  Nagaland: { latitude: 25.6751, longitude: 94.1086, name: 'Kohima' },
+  Sikkim: { latitude: 27.3389, longitude: 88.6065, name: 'Gangtok' },
+  Tripura: { latitude: 23.8315, longitude: 91.2868, name: 'Agartala' },
+  'Andaman and Nicobar Islands': { latitude: 11.7401, longitude: 92.6586, name: 'Port Blair' },
+  Chandigarh: { latitude: 30.7333, longitude: 76.7794, name: 'Chandigarh' },
+  'Dadra and Nagar Haveli and Daman and Diu': { latitude: 20.3974, longitude: 72.8328, name: 'Daman' },
+  'Jammu and Kashmir': { latitude: 34.0837, longitude: 74.7973, name: 'Srinagar' },
+  Ladakh: { latitude: 34.1526, longitude: 77.5771, name: 'Leh' },
+  Lakshadweep: { latitude: 10.5667, longitude: 72.6417, name: 'Kavaratti' },
+  Puducherry: { latitude: 11.9416, longitude: 79.8083, name: 'Puducherry' }
 };
 
 const normalizePlace = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+const fetchWithTimeout = async (url, timeoutMs = 12000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 export const getWeatherData = async (state = '', district = '') => {
   const apiKey = config.weatherApiKey;
@@ -63,7 +86,7 @@ export const getWeatherData = async (state = '', district = '') => {
     const indianLocations = [];
     for (const searchName of [...new Set(searchNames)]) {
       const searchDistrict = encodeURIComponent(searchName);
-      const locationResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${searchDistrict}&count=10&language=en&format=json`);
+      const locationResponse = await fetchWithTimeout(`https://geocoding-api.open-meteo.com/v1/search?name=${searchDistrict}&count=10&language=en&format=json`);
       if (!locationResponse.ok) continue;
       const locationData = await locationResponse.json();
       indianLocations.push(...(locationData.results || []).filter((item) => item.country_code === 'IN'));
@@ -86,23 +109,26 @@ export const getWeatherData = async (state = '', district = '') => {
       };
     }
 
-    const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,uv_index_max&timezone=auto&forecast_days=6`);
+    const weatherResponse = await fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,uv_index_max&timezone=auto&forecast_days=6`);
     if (!weatherResponse.ok) throw new Error('Live weather forecast is unavailable');
     const data = await weatherResponse.json();
     const current = data.current;
+    if (!current) throw new Error('Live weather response did not contain current conditions');
+    const hourlyTimes = data.hourly?.time || [];
+    const hourlyRain = data.hourly?.precipitation_probability || [];
     const currentHour = `${current.time.slice(0, 13)}:00`;
-    let currentHourIndex = data.hourly.time.findIndex((time) => time === currentHour);
-    if (currentHourIndex < 0) currentHourIndex = data.hourly.time.findIndex((time) => time >= currentHour);
-    const rainProbability = data.hourly.precipitation_probability[Math.max(0, currentHourIndex)] ?? 0;
-    const forecast = data.daily.time.slice(1).map((date, index) => {
+    let currentHourIndex = hourlyTimes.findIndex((time) => time === currentHour);
+    if (currentHourIndex < 0) currentHourIndex = hourlyTimes.findIndex((time) => time >= currentHour);
+    const rainProbability = hourlyRain[Math.max(0, currentHourIndex)] ?? 0;
+    const forecast = (data.daily?.time || []).slice(1).map((date, index) => {
       const dayIndex = index + 1;
       return {
         day: new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long' }),
-        maxTemp: Math.round(data.daily.temperature_2m_max[dayIndex]),
-        minTemp: Math.round(data.daily.temperature_2m_min[dayIndex]),
-        condition: describeWeather(data.daily.weather_code[dayIndex]),
-        rainProbability: data.daily.precipitation_probability_max[dayIndex] ?? 0,
-        windSpeed: Math.round(data.daily.wind_speed_10m_max[dayIndex])
+        maxTemp: Math.round(data.daily?.temperature_2m_max?.[dayIndex] ?? current.temperature_2m),
+        minTemp: Math.round(data.daily?.temperature_2m_min?.[dayIndex] ?? current.temperature_2m),
+        condition: describeWeather(data.daily?.weather_code?.[dayIndex]),
+        rainProbability: data.daily?.precipitation_probability_max?.[dayIndex] ?? 0,
+        windSpeed: Math.round(data.daily?.wind_speed_10m_max?.[dayIndex] ?? current.wind_speed_10m)
       };
     });
 
@@ -115,7 +141,7 @@ export const getWeatherData = async (state = '', district = '') => {
       condition: describeWeather(current.weather_code),
       rainProbability,
       feelsLike: Math.round(current.apparent_temperature),
-      uvIndex: data.daily.uv_index_max?.[0] != null ? Math.round(data.daily.uv_index_max[0]) : null,
+      uvIndex: data.daily?.uv_index_max?.[0] != null ? Math.round(data.daily.uv_index_max[0]) : null,
       forecast,
       isLiveApi: true,
       dataSource: 'Open-Meteo live forecast (NOAA-derived weather models)',
@@ -148,7 +174,7 @@ export const getWeatherData = async (state = '', district = '') => {
     }
   }
 
-  throw new Error(`Live weather is currently unavailable for ${district}, ${state}. Please verify the district spelling or try again.`);
+  throw new Error(`Live weather is temporarily unavailable for ${district}, ${state}. Please try again in a moment.`);
 };
 
 const formatWeatherResponse = ({

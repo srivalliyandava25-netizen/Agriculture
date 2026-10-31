@@ -41,7 +41,11 @@ export const WeatherPage = () => {
   };
 
   useEffect(() => {
-    if (state && district) fetchWeather();
+    if (!state || !district.trim()) return undefined;
+    const timer = setTimeout(() => {
+      fetchWeather();
+    }, 700);
+    return () => clearTimeout(timer);
   }, [state, district]);
 
   return (

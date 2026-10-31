@@ -19,13 +19,18 @@ export const getWeather = async (req, res, next) => {
     const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const statePattern = escapeRegex(state);
     const districtPattern = escapeRegex(district);
-    const activeAlerts = await WeatherAlert.find({
-      $or: [
-        { state: new RegExp(statePattern, 'i'), district: new RegExp(districtPattern, 'i') },
-        { state: new RegExp(statePattern, 'i'), district: 'All' }
-      ],
-      validUntil: { $gte: new Date() }
-    });
+    let activeAlerts = [];
+    try {
+      activeAlerts = await WeatherAlert.find({
+        $or: [
+          { state: new RegExp(statePattern, 'i'), district: new RegExp(districtPattern, 'i') },
+          { state: new RegExp(statePattern, 'i'), district: 'All' }
+        ],
+        validUntil: { $gte: new Date() }
+      });
+    } catch (alertError) {
+      console.warn(`[Weather] Could not load weather alerts: ${alertError.message}`);
+    }
 
     res.status(200).json({
       success: true,
@@ -33,7 +38,7 @@ export const getWeather = async (req, res, next) => {
       activeAlerts
     });
   } catch (error) {
-    if (error.message?.includes('Live weather is currently unavailable') || error.message?.includes('district')) {
+    if (error.message?.includes('Live weather is currently unavailable') || error.message?.includes('Live weather is temporarily unavailable') || error.message?.includes('district')) {
       return res.status(503).json({ success: false, message: error.message });
     }
     next(error);
