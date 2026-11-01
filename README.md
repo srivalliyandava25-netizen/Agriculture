@@ -1,4 +1,4 @@
-# Mithi Mitra (मिट्टीमित्र) — AI-Powered Smart Farming and Farmer Livelihood Platform
+# Mitti Mitra (मिट्टीमित्र) — AI-Powered Smart Farming and Farmer Livelihood Platform
 
 > **Tagline:** Better Soil. Better Crops. Better Livelihood.  
 > **Theme:** Environment, Sustainable Agriculture, Farmer Empowerment, and Rural Livelihood Improvement.
